@@ -7,16 +7,22 @@ import {
   Param,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { Role, Roles } from 'src/auth/roles.decorator';
+import { AuthGuard } from 'src/auth/auth.guard';
+import { RolesGuard } from 'src/auth/roles.guard';
 
 @Controller('courses')
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
   @Post('/create')
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(Role.Admin)
   async create(@Body() createCourseDto: CreateCourseDto) {
     const course = await this.courseService.create(createCourseDto);
     if (course) {

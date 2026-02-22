@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserService } from 'src/user/user.service';
 import { RegisterUserDto } from './dto/registerUser.dto';
-import bycrpt from 'bcrypt';
+import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { LoginUserDto } from './dto/loginUser.dto';
 
@@ -12,13 +12,13 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
   async userRegister(registerUserDto: RegisterUserDto) {
-    const hash = await bycrpt.hash(registerUserDto.password, 10);
+    const hash = await bcrypt.hash(registerUserDto.password, 10);
     const user = await this.userService.createUser({
       ...registerUserDto,
       password: hash,
     });
 
-    const payload = { sub: user._id };
+    const payload = { sub: user._id, role: user.role };
     const token = await this.jwtService.signAsync(payload);
 
     return { access_token: token };
@@ -26,18 +26,29 @@ export class AuthService {
 
   async userLogin(loginUserDto: LoginUserDto) {
     const user = await this.userService.findByEmail(loginUserDto.email);
+
     if (!user) {
-      throw new Error('Invalid credentials');
+      return {
+        statusCode: 401,
+        message: 'The email address is not registered',
+      };
     }
-    const isPasswordValid = await bycrpt.compare(
+
+    const isPasswordValid = await bcrypt.compare(
       loginUserDto.password,
       user.password,
     );
+
     if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
+      return {
+        statusCode: 401,
+        message: 'Invalid password or email address',
+      };
     }
-    const payload = { sub: user._id };
+
+    const payload = { sub: user._id, role: user.role };
     const token = await this.jwtService.signAsync(payload);
+
     return { access_token: token };
   }
 
