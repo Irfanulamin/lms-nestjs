@@ -12,10 +12,47 @@ export class CourseService {
     return await this.courseModel.create(createCourseDto);
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    minPrice: number = 0,
+    maxPrice: number = Infinity,
+    sortBy: string = 'createdAt',
+    order: 'asc' | 'desc' = 'desc',
+  ) {
+    // Ensure page and limit are within reasonable bounds
+    page = Math.max(1, page);
+    limit = Math.min(Math.max(1, limit), 100);
     const skip = (page - 1) * limit;
-    const data = await this.courseModel.find().skip(skip).limit(limit).exec();
-    const total = await this.courseModel.countDocuments();
+
+    // Build the query object based on search and price filters
+    const query: any = {};
+    if (search) {
+      query.$text = { $search: search };
+    }
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      query.price = {
+        ...(minPrice !== undefined && { $gte: minPrice }),
+        ...(maxPrice !== undefined && { $lte: maxPrice }),
+      };
+    }
+
+    const sortOrder = order === 'asc' ? 1 : -1;
+
+    const [data, total] = await Promise.all([
+      this.courseModel
+        .find(query)
+        .sort({ [sortBy]: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+
+      this.courseModel.countDocuments(query),
+    ]);
+
     return {
       data,
       pagination: {

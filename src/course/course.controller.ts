@@ -35,8 +35,24 @@ export class CourseController {
   }
 
   @Get('/all')
-  async findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
-    const courses = await this.courseService.findAll(page, limit);
+  async findAll(
+    @Query('page') page: number,
+    @Query('limit') limit: number,
+    @Query('search') search: string,
+    @Query('minPrice') minPrice: number,
+    @Query('maxPrice') maxPrice: number,
+    @Query('sortBy') sortBy: string,
+    @Query('order') order: 'asc' | 'desc',
+  ) {
+    const courses = await this.courseService.findAll(
+      page,
+      limit,
+      search,
+      minPrice,
+      maxPrice,
+      sortBy,
+      order,
+    );
     return {
       statusCode: 200,
       message: 'Courses retrieved successfully',
